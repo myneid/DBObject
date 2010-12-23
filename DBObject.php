@@ -615,13 +615,25 @@ class DBObject
     {
         $this->order_by = $orderby;
     }
+    public function order($orderby)
+    {
+        $this->OrderBy ( $orderby;)
+    }
     public function WhereAdd($whereadd)
     {
         $this->where_add = $whereadd;
     }
+    public function where($whereadd)
+    {
+        $this->WhereAdd ( $whereadd);
+    }
     public function Limit($limit)
     {
         $this->limit = $limit;
+    }
+    public function limit($limit)
+    {
+	    $this->Limit($limit);
     }
 
 
