@@ -617,7 +617,7 @@ class DBObject
     }
     public function order($orderby)
     {
-        $this->OrderBy ( $orderby;)
+        $this->OrderBy ( $orderby);
     }
     public function WhereAdd($whereadd)
     {
@@ -630,10 +630,6 @@ class DBObject
     public function Limit($limit)
     {
         $this->limit = $limit;
-    }
-    public function limit($limit)
-    {
-	    $this->Limit($limit);
     }
 
 
