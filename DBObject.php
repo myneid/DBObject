@@ -11,6 +11,7 @@
  * examples are at the bottom of this file
  * i had this idea to do this and found online somebody that had already done something similar using pear db which i modified completely and added a bunch of new stuff into it to make it usable. you can find the original at
  * http://www-128.ibm.com/developerworks/opensource/library/os-php-flexobj/
+ *  (this comment was written a very long time ago as this has progressed way further thanb that)
  *
  * @todo exception handling
  * @author tanguy de courson <tanguy@0x7a69.net>
@@ -115,6 +116,30 @@ class DBObject
 
 
     }
+    /**
+    * this method will use the factory pattern inherant in this class to instantiate itself
+    * purpose of use is to use from a class that extends dbobject
+    *
+    **/
+    public function __constructFromDb($database, $table, $dbh)
+    {
+    	$tmp = self::factory($database, $table, $dbh);
+    	$ckey = "$database.$table";
+    	//$this->__construct($database, $table, self::$tableCache[$ckey] );
+    	$fields = self::$tableCache[$ckey];
+    	$this->table = $table;
+    	$this->database = $database;
+    	foreach( $fields as $key )
+    	{
+    	    $this->fields[$key] = null;
+    	    $this->direct[$key] = null;
+    	    $fname = preg_replace("/_(\w)/e", "strtoupper('\\1')", ucfirst($key));
+    	    $this->fields_camel[$fname] = $key;
+    	}
+    	
+    	$this->dbh = $dbh;
+    	$this->_setEnumValues(self::$enumCache[$ckey]);
+    }
 
     public function resetFields(){
         foreach($this->fields as $key => $val){
@@ -157,18 +182,18 @@ class DBObject
      *
      */    
     static function directExecute($dbh,$sql,$params=null) {
-/*
-                        if(1) {
+
+                        if(0) {
                                 try{
                                         //make key
                                         $key = md5($sql);
                                         //check cache
-                                        $stmt = $dbh->prepare("select `key` from Sql_log where `key` = ?");
+                                        $stmt = $dbh->prepare("select `key` from sql_log where `key` = ?");
                                         $stmt->execute(array($key));
                                         $data = $stmt->fetch();
                                         if(empty($data)) {
                                                 //Log it...
-                                                $stmt = $dbh->prepare("insert into Sql_log (`key`,`sql`) values(?,?)");
+                                                $stmt = $dbh->prepare("insert into sql_log (`key`,`sql`) values(?,?)");
                                                 $stmt->execute(array($key,$sql));
                                         }
                                 } catch(Exception $e) {
@@ -176,21 +201,24 @@ class DBObject
                                         //Do nothing - dont let possible errors stop caller
                                 }
                         }//log section
- */			
+ 	
+ 
+//print "sql: $sql";
+
         $stmt = $dbh->prepare($sql);
         $stmt->execute($params);
         return($stmt);
     }
 
     /**
-     * This is method prepareExexcute
+     * This is method prepareExecute
      *
      * @param mixed $sql SQL to be executed
      * @param mixed $params Substitution Parameters for exec
      * @return PDOStatement PDO statement Handle
      *
      */
-    public function prepareExexcute($sql,$params=null) {
+    public function prepareExecute($sql,$params=null) {
         return(self::directExecute($this->dbh,$sql,$params));
     }
 
@@ -358,7 +386,7 @@ class DBObject
     {
         if(!$id)
             return false;
-        $stmt = $this->prepareExexcute("SELECT * FROM ". $this->database . '.' .$this->table." WHERE id=?",array( $id ));
+        $stmt = $this->prepareExecute("SELECT * FROM ". $this->database . '.' .$this->table." WHERE id=?",array( $id ));
         $row = array();
         //$res->fetchInto( $row, DB_FETCHMODE_ASSOC );
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -372,13 +400,13 @@ class DBObject
         foreach(  $row  as $key => $val)
         {
             $this->fields[ $key ] = $val;
-                        /** lets kill autolinking of tables for now
+                        /** lets kill autolinking of tables for now**/
             if(preg_match("/(.*?)_id/", $key, $matches))
             {
-                $this->linked_objects[$matches[1]] = DBObject::factory($matches[1]);
+                $this->linked_objects[$matches[1]] = DBObject::factory($this->database, self::pluralize($matches[1]), $this->dbh);
                 $this->linked_objects[$matches[1]]->get($val);
             }
-                        **/
+                       // **/
         }
         $this->original_fields = $this->fields;
         return true;
@@ -420,7 +448,7 @@ class DBObject
         $sql .= " INTO ".$this->database . '.' .$this->table." ( $fields )
             VALUES ( $inspt )";
 
-        $this->prepareExexcute($sql,$values);
+        $this->prepareExecute($sql,$values);
 
         $id = $this->dbh->lastInsertId();
         @$this->setId($id);
@@ -468,7 +496,7 @@ class DBObject
 
             $sql = 'UPDATE '. $this->database . '.' .$this->table.' SET '.$set.' WHERE id=?';
 
-            $this->prepareExexcute($sql,$values);
+            $this->prepareExecute($sql,$values);
 
             $this->original_fields = $this->fields;
         }
@@ -479,7 +507,7 @@ class DBObject
      */
     public function delete()
     {
-        $this->prepareExexcute('DELETE FROM '. $this->database . '.'.$this->table.' WHERE id=?',array( $this->id ));
+        $this->prepareExecute('DELETE FROM '. $this->database . '.'.$this->table.' WHERE id=?',array( $this->id ));
     }
     /**
      * delete everything in this table, i should disable this
@@ -487,7 +515,7 @@ class DBObject
      */
     public function delete_all()
     {
-        $this->prepareExexcute('DELETE FROM '. $this->database . '.' .$this->table);
+        $this->prepareExecute('DELETE FROM '. $this->database . '.' .$this->table);
     }
     /**
      * this function will create and execute the query based on set fields
@@ -534,7 +562,7 @@ class DBObject
         }
         if(@$this->query['result'])
             $this->query['result']->closeCursor();
-        $this->query['result'] = $this->prepareExexcute($query . ' ' . $where_clause,$valueArray);
+        $this->query['result'] = $this->prepareExecute($query . ' ' . $where_clause,$valueArray);
         if($autofetch)
             $this->fetch();
 
@@ -631,6 +659,69 @@ class DBObject
     {
         $this->limit = $limit;
     }
+    public static function pluralize($string)
+    {
+    
+        $plural = array(
+            array( '/(quiz)$/i',               "$1zes"   ),
+        array( '/^(ox)$/i',                "$1en"    ),
+        array( '/([m|l])ouse$/i',          "$1ice"   ),
+        array( '/(matr|vert|ind)ix|ex$/i', "$1ices"  ),
+        array( '/(x|ch|ss|sh)$/i',         "$1es"    ),
+        array( '/([^aeiouy]|qu)y$/i',      "$1ies"   ),
+        array( '/([^aeiouy]|qu)ies$/i',    "$1y"     ),
+    	    array( '/(hive)$/i',               "$1s"     ),
+    	    array( '/(?:([^f])fe|([lr])f)$/i', "$1$2ves" ),
+    	    array( '/sis$/i',                  "ses"     ),
+    	    array( '/([ti])um$/i',             "$1a"     ),
+    	    array( '/(buffal|tomat)o$/i',      "$1oes"   ),
+            array( '/(bu)s$/i',                "$1ses"   ),
+    	    array( '/(alias|status)$/i',       "$1es"    ),
+    	    array( '/(octop|vir)us$/i',        "$1i"     ),
+    	    array( '/(ax|test)is$/i',          "$1es"    ),
+    	    array( '/s$/i',                    "s"       ),
+    	    array( '/$/',                      "s"       )
+        );
+    
+        $irregular = array(
+        array( 'move',   'moves'    ),
+        array( 'sex',    'sexes'    ),
+        array( 'child',  'children' ),
+        array( 'man',    'men'      ),
+        array( 'person', 'people'   )
+        );
+    
+        $uncountable = array( 
+        'sheep', 
+        'fish',
+        'series',
+        'species',
+        'money',
+        'rice',
+        'information',
+        'equipment'
+        );
+    
+        // save some time in the case that singular and plural are the same
+        if ( in_array( strtolower( $string ), $uncountable ) )
+        return $string;
+    
+        // check for irregular singular forms
+        foreach ( $irregular as $noun )
+        {
+        if ( strtolower( $string ) == $noun[0] )
+            return $noun[1];
+        }
+    
+        // check for matches using regular expressions
+        foreach ( $plural as $pattern )
+        {
+        if ( preg_match( $pattern[0], $string ) )
+            return preg_replace( $pattern[0], $pattern[1], $string );
+        }
+    
+        return $string;
+    }
 
 
 
@@ -656,7 +747,7 @@ $book2->get( $id );
 echo( "Title = ".$book2->getTitle()."\n" );
 $book2->delete( );
 
-$book3 = DBObject::factory('library','book');
+$book3 = DBObject::factory('library','book', $dbh);
 $book->delete_all();
 $book->setTitle( "PHP Hacks" );
 $book->setAuthor( "Jack Herrington" );
@@ -669,7 +760,7 @@ $book->setTitle( "Podcasting Hacks" );
 $book->update();
 
 
-$book = DBObject::factory('library','book');
+$book = DBObject::factory('library','book', $dbh);
 $book->setTitle('PHP hacks');
 $book->find(1);
 echo( "Title = ".$book->getTitle()."\n" );
@@ -688,5 +779,17 @@ $book = new DBObject( 'library','book', array( 'id', 'author_id',
 //author_id links to the author table
 $book->get(12);
 echo "the authors name is " . $book->linked_objects['author']->getName();
+
+to create a model that extends DBObject
+
+<?php
+class Category extends DBObject
+{
+	public function __construct()
+	{
+		$this->__constructFromDb('library', 'book', $dbh);
+	}
+}
+
  */
 class DBObjectException extends Exception {}
