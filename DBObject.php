@@ -5,13 +5,13 @@
 //$dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 /**
- * class DBObject will act very similar to pear db dataobjects but using PDO and php5 only
+ * class DBObject will act very similar to PEAR DB_DataObject but using PDO and php5 only
  * it will do dynamic object creation based on a passed table name.
- * it will do table linking if you have a field named car_id it will link to the table car on teh id field
+ * it will do table linking if you have a field named car_id it will link to the table car on the id field
  * examples are at the bottom of this file
  * i had this idea to do this and found online somebody that had already done something similar using pear db which i modified completely and added a bunch of new stuff into it to make it usable. you can find the original at
  * http://www-128.ibm.com/developerworks/opensource/library/os-php-flexobj/
- *  (this comment was written a very long time ago as this has progressed way further thanb that)
+ *  (this comment was written a very long time ago as this has progressed way further then that)
  *
  * @todo exception handling
  * @author tanguy de courson <tanguy@0x7a69.net>
@@ -34,18 +34,18 @@ class DBObject implements Serializable
     private $database;
     public $dbh;
     /**
-     * $fields is an array with teh key of the fieldname and the value of hte value
+     * $fields is an array with the key of the fieldname and the value of the value
      *
      * @var array
      */
     private $fields = array();
     /**
-     * $original_fields is a copy of fields upon any get/fetch methods in order for udpate() to just update changed fields
+     * $original_fields is a copy of fields upon any get/fetch methods in order for update() to just update changed fields
      *
      **/
     private $original_fields = array();
     /**
-     * this is an array where the key is teh fieldname in camel notation and the value the fieldname
+     * this is an array where the key is the fieldname in camel notation and the value the fieldname
      *
      * @var unknown_type
      */
@@ -358,7 +358,7 @@ class DBObject implements Serializable
      *
      * @param string $database the database name
      * @param string $table the table name
-     * @param pdo database handler optional, if not passed it will use the global var $dbh
+     * @param PDO database handler optional, if not passed it will use the global var $dbh
      * @return object $this
      *
      */
@@ -559,7 +559,7 @@ class DBObject implements Serializable
      * this function will create and execute the query based on set fields
      *
      * @param bool $autofetch if true will run fetch once to get one row
-     * @return int $rows return the number of rows for htis query
+     * @return int $rows return the number of rows for this query
      */
     function find($autofetch=false)
     {
@@ -610,7 +610,7 @@ class DBObject implements Serializable
         return $this->cached_row_count;
     }
     /**
-     * get teh next row from the query['result'] and set this object to its values
+     * get the next row from the query['result'] and set this object to its values
      *
      * @return bool true if there is another row and false if there is no more rows or failure
      */
