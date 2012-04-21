@@ -17,7 +17,7 @@
  * @author tanguy de courson <tanguy@0x7a69.net>
  *
  */
-class DBObject
+class DBObject implements Serializable
 {
 
     const INSERT_MODE_INSERT = 1;
@@ -72,8 +72,8 @@ class DBObject
     public $cached_row_count = 0;
     /**
      * this will contain an array of the field types for each field
-     * it is filled in with teh method _getFieldTypes
-     * it is a multidimentional arrya so that you can do $field_types[0]['type'] and $field_types[0]['length'] the indexes correspond to $this->fields for the names
+     * it is filled in with the method _getFieldTypes
+     * it is a multidimensional array so that you can do $field_types[0]['type'] and $field_types[0]['length'] the indexes correspond to $this->fields for the names
      *
      * @var array $field_types
      */
@@ -117,8 +117,8 @@ class DBObject
 
     }
     /**
-    * this method will use the factory pattern inherant in this class to instantiate itself
-    * purpose of use is to use from a class that extends dbobject
+    * this method will use the factory pattern inherent in this class to instantiate itself
+    * purpose of use is to use from a class that extends DBObject
     *
     **/
     public function __constructFromDb($database, $table, $dbh)
@@ -170,10 +170,48 @@ class DBObject
         return $this->fields_camel;
     }
 
-
+	/**
+	 * serialize() for serializable interface, re-implemented to stop the error case from attempting to serialize a PDO handle
+	 * (done because otherwise we'll just throw PDOException and return nothing useful)
+	 *
+	 * @return string, serialized object
+	 **/
+	function serialize()
+	{
+		$to_serialize = new StdClass;
+        foreach($this->fields as $f =>$v)
+		{
+			$to_serialize->$f = $v;
+		}
+		$to_serialize->fields		= $this->fields;
+		$to_serialize->table		= $this->table;
+		$to_serialize->database		= $this->database;
+		$to_serialize->fields_camel	= $this->fields_camel;
+		
+		return serialize( $to_serialize );
+	}
+	
+	/**
+	 * unserialize() for serializable interface
+	 *
+	 * @return void
+	 **/
+	function unserialize( $data )
+	{
+		$from_unserialize = unserialize( $data );
+		
+		foreach( $from_unserialize->fields as $f=>$v )
+		{
+			$this->f = $v;
+		}
+		$this->fields		= $from_unserialize->fields;
+		$this->table		= $from_unserialize->table;
+		$this->database		= $from_unserialize->database;
+		$this->fields_camel	= $from_unserialize->fields_camel;
+	}
 
     /**
-     * This is method directExexcute
+     * This is method directExecute
      *
      * @param mixed $dbh DB Handle
      * @param mixed $sql SQL to be executed
@@ -316,7 +354,7 @@ class DBObject
     }
 
     /**
-     * this function will return this object by reading the fieldnames dynamcally
+     * this function will return this object by reading the fieldnames dynamically
      *
      * @param string $database the database name
      * @param string $table the table name
@@ -596,7 +634,7 @@ class DBObject
 
     }
     /**
-     * set this objects fields from waht is passed in, be it an object of this type with the same fieldnames with set/get methods or an array of the fieldnames and values
+     * set this objects fields from what is passed in, be it an object of this type with the same fieldnames with set/get methods or an array of the fieldnames and values
      *
      * @param array | object $from
      */
