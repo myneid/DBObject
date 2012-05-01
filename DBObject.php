@@ -469,7 +469,12 @@ class DBObject implements Serializable
 
             if(isset($this->direct[$k])) {
                 $val = $this->direct[$k];
-            } else {
+	    } 
+	    else if($k == 'created_at')
+	    {
+		    $val="NOW()";
+	    }
+	    else {
                 $val = "?";
                 $values []= $v;
             }
