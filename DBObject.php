@@ -574,7 +574,7 @@ class DBObject implements Serializable
         $valueArray = array();
         foreach($this->fields as $f => $v)
         {
-            if($v)
+            if(isset($v))
             {
                 if($where_clause)
                 {
