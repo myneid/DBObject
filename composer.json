@@ -1,0 +1,17 @@
+{
+	"name": "myneid/DBObject",
+	"type": "library",
+	"description": "DBObjects for magic activerecord type stuff",
+	"keywords": ["dbobject"],
+	"homepage": "https://github.com/myneid/DBObject",
+	"license": "MIT",
+	"minimum-stability": "dev",
+	"authors": [
+	{
+		"name": "Tanguy de Courson",
+		"email": "tanguy@0x7a69.com",
+		"homepage": "http://0x7a69.com",
+		"role": "Developer"
+	}
+	]
+}
